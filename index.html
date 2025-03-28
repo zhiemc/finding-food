@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>我的地图</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/antd@5.8.2/dist/antd.min.css" />
     <style>
         * {
             margin: 0;
@@ -163,4 +163,138 @@
             
             <div class="form-group">
                 <label for="markerLat">纬度</label>
-                <input type="number" id="
+                <input type="number" id="markerLat" step="0.000001" placeholder="输入纬度">
+            </div>
+            
+            <div class="form-group">
+                <label for="markerLng">经度</label>
+                <input type="number" id="markerLng" step="0.000001" placeholder="输入经度">
+            </div>
+            
+            <button id="addMarker" class="btn">添加点位</button>
+            
+            <h2>现有点位</h2>
+            <div class="marker-list" id="markerList">
+                <!-- 点位列表将在这里动态生成 -->
+            </div>
+        </div>
+        
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <script src="https://webapi.amap.com/maps?v=2.0&key=01d894d8da93f4fbb0287613001e1433"></script>
+    <script>
+        // 初始化地图
+        let map;
+        let markers = [];
+        
+        function initMap() {
+            // 初始化地图
+            map = new AMap.Map('map', {
+                zoom: 13,
+                center: [116.4074, 39.9042], // 默认显示北京
+                viewMode: '3D'
+            });
+            
+            // 初始化时添加一些示例标记
+            addMarker('示例点位1', 39.9042, 116.4074);
+            addMarker('示例点位2', 39.9142, 116.4174);
+        }
+        
+        // 添加标记点
+        function addMarker(name, lat, lng) {
+            // 创建标记
+            const marker = new AMap.Marker({
+                position: [lng, lat],
+                title: name
+            });
+            
+            // 将标记添加到地图
+            map.add(marker);
+            
+            // 存储标记数据
+            markers.push({
+                id: Date.now(),
+                name: name,
+                lat: lat,
+                lng: lng,
+                marker: marker
+            });
+            
+            // 更新列表
+            updateMarkerList();
+            
+            // 聚焦到新标记
+            map.setZoomAndCenter(16, [lng, lat]);
+        }
+        
+        // 删除标记点
+        function deleteMarker(id) {
+            // 查找标记
+            const index = markers.findIndex(marker => marker.id === id);
+            if (index !== -1) {
+                // 从地图上移除
+                map.remove(markers[index].marker);
+                
+                // 从数组中移除
+                markers.splice(index, 1);
+                
+                // 更新列表
+                updateMarkerList();
+            }
+        }
+        
+        // 更新标记列表
+        function updateMarkerList() {
+            const markerListElement = document.getElementById('markerList');
+            markerListElement.innerHTML = '';
+            
+            markers.forEach(marker => {
+                const markerItem = document.createElement('div');
+                markerItem.className = 'marker-item';
+                
+                markerItem.innerHTML = `
+                    <div class="marker-info">
+                        <div class="marker-name">${marker.name}</div>
+                        <div class="marker-coordinates">纬度: ${marker.lat}, 经度: ${marker.lng}</div>
+                    </div>
+                    <button class="delete-btn" onclick="deleteMarker(${marker.id})">删除</button>
+                `;
+                
+                markerListElement.appendChild(markerItem);
+            });
+        }
+        
+        // 添加标记按钮点击事件
+        document.getElementById('addMarker').addEventListener('click', function() {
+            const name = document.getElementById('markerName').value;
+            const lat = parseFloat(document.getElementById('markerLat').value);
+            const lng = parseFloat(document.getElementById('markerLng').value);
+            
+            if (name && !isNaN(lat) && !isNaN(lng)) {
+                addMarker(name, lat, lng);
+                
+                // 清空输入框
+                document.getElementById('markerName').value = '';
+                document.getElementById('markerLat').value = '';
+                document.getElementById('markerLng').value = '';
+            } else {
+                alert('请输入有效的名称、纬度和经度');
+            }
+        });
+        
+        // 允许在地图上点击添加标记
+        map.on('click', function(e) {
+            const name = prompt('请输入点位名称:');
+            if (name) {
+                addMarker(name, e.latLng.lat, e.latLng.lng);
+            }
+        });
+        
+        // 初始化地图
+        initMap();
+    </script>
+</body>
+</html>
