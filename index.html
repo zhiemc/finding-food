@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>代打卡项目管理</title>
+    <title>美食库存</title>
     <style>
         * {
             margin: 0;
@@ -25,6 +25,7 @@
             border-radius: 10px;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
             padding: 30px;
+            transition: all 0.3s ease;
         }
         
         h1 {
@@ -49,6 +50,7 @@
         
         .btn:hover {
             background-color: #0077f0;
+            transform: scale(1.02);
         }
         
         .btn-secondary {
@@ -85,6 +87,13 @@
             border: 1px solid #d1d1d6;
             border-radius: 4px;
             font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #0071e3;
+            box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.1);
         }
         
         table {
@@ -97,6 +106,7 @@
             padding: 12px 15px;
             text-align: left;
             border-bottom: 1px solid #e6e6e9;
+            transition: all 0.3s ease;
         }
         
         th {
@@ -127,9 +137,17 @@
             color: white;
         }
         
+        .edit-btn:hover {
+            background-color: #0077f0;
+        }
+        
         .delete-btn {
             background-color: #ff3b30;
             color: white;
+        }
+        
+        .delete-btn:hover {
+            background-color: #ff1a1a;
         }
         
         .rename-btn {
@@ -137,9 +155,8 @@
             color: white;
         }
         
-        .sort-btn {
-            background-color: #4CAF50;
-            color: white;
+        .rename-btn:hover {
+            background-color: #0077ff;
         }
         
         .modal {
@@ -153,6 +170,7 @@
             z-index: 1000;
             justify-content: center;
             align-items: center;
+            transition: all 0.3s ease;
         }
         
         .modal-content {
@@ -161,6 +179,14 @@
             border-radius: 10px;
             width: 90%;
             max-width: 500px;
+            transform: scale(0.95);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .modal.show {
+            transform: scale(1);
+            opacity: 1;
         }
         
         .modal-header {
@@ -176,6 +202,11 @@
             font-size: 20px;
             cursor: pointer;
             color: #86868b;
+            transition: all 0.3s ease;
+        }
+        
+        .close-btn:hover {
+            color: #000;
         }
         
         @media (max-width: 768px) {
@@ -192,57 +223,52 @@
 </head>
 <body>
     <div class="container">
-        <h1>代打卡项目管理</h1>
+        <h1>美食库存</h1>
         
-        <button id="addProject" class="btn">添加项目</button>
+        <button id="addFood" class="btn">添加美食</button>
         
-        <table id="projectsTable">
+        <table id="foodsTable">
             <thead>
                 <tr>
                     <th>店名</th>
-                    <th>五分评分</th>
-                    <th>打卡日</th>
+                    <th>评分</th>
+                    <th>添加日期</th>
                     <th>操作</th>
                 </tr>
             </thead>
-            <tbody id="projectsList">
-                <!-- 项目列表将在这里动态生成 -->
+            <tbody id="foodsList">
+                <!-- 美食列表将在这里动态生成 -->
             </tbody>
         </table>
     </div>
     
-    <!-- 添加/编辑项目模态框 -->
-    <div id="projectModal" class="modal">
+    <!-- 添加/编辑美食模态框 -->
+    <div id="foodModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="modalTitle">添加项目</h2>
+                <h2 id="modalTitle">添加美食</h2>
                 <button class="close-btn" onclick="closeModal()">&times;</button>
             </div>
             
             <div class="form-group">
                 <label for="storeName">店名</label>
-                <input type="text" id="storeName" placeholder="输入店名">
+                <input type="text" id="storeName" placeholder="输入店名" required>
             </div>
             
             <div class="form-group">
-                <label for="rating">五分评分</label>
-                <input type="number" id="rating" min="1" max="5" placeholder="输入评分（1-5）">
+                <label for="rating">评分</label>
+                <input type="number" id="rating" min="1" max="5" placeholder="输入评分（1-5）（可选）">
             </div>
             
-            <div class="form-group">
-                <label for="punchDate">打卡日</label>
-                <input type="date" id="punchDate">
-            </div>
-            
-            <button id="saveProject" class="btn">保存</button>
+            <button id="saveFood" class="btn">保存</button>
         </div>
     </div>
     
-    <!-- 重命名项目模态框 -->
+    <!-- 重命名美食模态框 -->
     <div id="renameModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>重命名项目</h2>
+                <h2>重命名美食</h2>
                 <button class="close-btn" onclick="closeModal()">&times;</button>
             </div>
             
@@ -256,158 +282,165 @@
     </div>
 
     <script>
-        let projects = [];
-        let currentProjectId = null;
+        let foods = [];
+        let currentFoodId = null;
         let isEditMode = false;
         
-        // 初始化项目列表
-        function initProjects() {
-            // 示例数据
-            projects = [
-                { id: 1, storeName: "星巴克", rating: 5, punchDate: "2024-01-01" },
-                { id: 2, storeName: "麦当劳", rating: 4, punchDate: "2024-01-02" },
-                { id: 3, storeName: "肯德基", rating: 3, punchDate: "2024-01-03" }
-            ];
+        // 初始化美食列表
+        function initFoods() {
+            // 从localStorage加载数据
+            const savedFoods = localStorage.getItem('foods');
+            if (savedFoods) {
+                foods = JSON.parse(savedFoods);
+            } else {
+                // 示例数据
+                foods = [
+                    { id: 1, storeName: "星巴克", rating: 5, addDate: "2024-01-01" },
+                    { id: 2, storeName: "麦当劳", rating: 4, addDate: "2024-01-02" },
+                    { id: 3, storeName: "肯德基", rating: 3, addDate: "2024-01-03" }
+                ];
+                saveFoods();
+            }
             
-            renderProjects();
+            renderFoods();
         }
         
-        // 渲染项目列表
-        function renderProjects() {
-            const projectsList = document.getElementById('projectsList');
-            projectsList.innerHTML = '';
+        // 保存美食到localStorage
+        function saveFoods() {
+            localStorage.setItem('foods', JSON.stringify(foods));
+        }
+        
+        // 渲染美食列表
+        function renderFoods() {
+            const foodsList = document.getElementById('foodsList');
+            foodsList.innerHTML = '';
             
-            projects.forEach(project => {
+            foods.forEach(food => {
                 const row = document.createElement('tr');
                 
                 row.innerHTML = `
-                    <td>${project.storeName}</td>
-                    <td>${project.rating}</td>
-                    <td>${project.punchDate}</td>
+                    <td>${food.storeName}</td>
+                    <td>${food.rating || '-'}</td>
+                    <td>${food.addDate}</td>
                     <td class="action-buttons">
-                        <button class="action-btn edit-btn" onclick="editProject(${project.id})">编辑</button>
-                        <button class="action-btn delete-btn" onclick="deleteProject(${project.id})">删除</button>
-                        <button class="action-btn rename-btn" onclick="renameProject(${project.id})">重命名</button>
+                        <button class="action-btn edit-btn" onclick="editFood(${food.id})">编辑</button>
+                        <button class="action-btn delete-btn" onclick="deleteFood(${food.id})">删除</button>
+                        <button class="action-btn rename-btn" onclick="renameFood(${food.id})">重命名</button>
                     </td>
                 `;
                 
-                projectsList.appendChild(row);
+                foodsList.appendChild(row);
             });
         }
         
         // 打开模态框
-        function openModal(title, isEdit = false, projectId = null) {
+        function openModal(title, isEdit = false, foodId = null) {
             document.getElementById('modalTitle').textContent = title;
             isEditMode = isEdit;
-            currentProjectId = projectId;
+            currentFoodId = foodId;
             
             if (isEdit) {
-                const project = projects.find(p => p.id === projectId);
-                document.getElementById('storeName').value = project.storeName;
-                document.getElementById('rating').value = project.rating;
-                document.getElementById('punchDate').value = project.punchDate;
+                const food = foods.find(f => f.id === foodId);
+                document.getElementById('storeName').value = food.storeName;
+                document.getElementById('rating').value = food.rating || '';
             } else {
                 document.getElementById('storeName').value = '';
                 document.getElementById('rating').value = '';
-                document.getElementById('punchDate').value = '';
             }
             
-            document.getElementById('projectModal').style.display = 'flex';
+            document.getElementById('foodModal').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('foodModal').classList.add('show');
+            }, 10);
         }
         
         // 关闭模态框
         function closeModal() {
-            document.getElementById('projectModal').style.display = 'none';
+            document.getElementById('foodModal').classList.remove('show');
+            setTimeout(() => {
+                document.getElementById('foodModal').style.display = 'none';
+            }, 300);
             document.getElementById('renameModal').style.display = 'none';
         }
         
-        // 添加项目
-        document.getElementById('addProject').addEventListener('click', function() {
-            openModal('添加项目');
+        // 添加美食
+        document.getElementById('addFood').addEventListener('click', function() {
+            openModal('添加美食');
         });
         
-        // 保存项目
-        document.getElementById('saveProject').addEventListener('click', function() {
+        // 保存美食
+        document.getElementById('saveFood').addEventListener('click', function() {
             const storeName = document.getElementById('storeName').value;
-            const rating = parseInt(document.getElementById('rating').value);
-            const punchDate = document.getElementById('punchDate').value;
+            const rating = document.getElementById('rating').value;
             
-            if (storeName && !isNaN(rating) && punchDate) {
+            if (storeName) {
+                const today = new Date();
+                const addDate = today.toISOString().split('T')[0];
+                
                 if (isEditMode) {
-                    // 编辑现有项目
-                    const index = projects.findIndex(p => p.id === currentProjectId);
+                    // 编辑现有美食
+                    const index = foods.findIndex(f => f.id === currentFoodId);
                     if (index !== -1) {
-                        projects[index].storeName = storeName;
-                        projects[index].rating = rating;
-                        projects[index].punchDate = punchDate;
+                        foods[index].storeName = storeName;
+                        if (rating) {
+                            foods[index].rating = parseInt(rating);
+                        }
                     }
                 } else {
-                    // 添加新项目
-                    const newId = projects.length > 0 ? Math.max(...projects.map(p => p.id)) + 1 : 1;
-                    projects.push({ id: newId, storeName, rating, punchDate });
+                    // 添加新美食
+                    const newId = foods.length > 0 ? Math.max(...foods.map(f => f.id)) + 1 : 1;
+                    foods.push({ id: newId, storeName, rating: rating ? parseInt(rating) : null, addDate });
                 }
                 
-                renderProjects();
+                saveFoods();
+                renderFoods();
                 closeModal();
             } else {
-                alert('请输入有效的信息');
+                alert('请输入店名');
             }
         });
         
-        // 编辑项目
-        function editProject(id) {
-            openModal('编辑项目', true, id);
+        // 编辑美食
+        function editFood(id) {
+            openModal('编辑美食', true, id);
         }
         
-        // 删除项目
-        function deleteProject(id) {
-            projects = projects.filter(project => project.id !== id);
-            renderProjects();
+        // 删除美食
+        function deleteFood(id) {
+            foods = foods.filter(food => food.id !== id);
+            saveFoods();
+            renderFoods();
         }
         
-        // 重命名项目
-        function renameProject(id) {
-            currentProjectId = id;
-            const project = projects.find(p => p.id === id);
-            document.getElementById('newName').value = project.storeName;
+        // 重命名美食
+        function renameFood(id) {
+            currentFoodId = id;
+            const food = foods.find(f => f.id === id);
+            document.getElementById('newName').value = food.storeName;
             document.getElementById('renameModal').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('renameModal').classList.add('show');
+            }, 10);
         }
         
         // 保存重命名
         document.getElementById('saveRename').addEventListener('click', function() {
             const newName = document.getElementById('newName').value;
             if (newName) {
-                const index = projects.findIndex(p => p.id === currentProjectId);
+                const index = foods.findIndex(f => f.id === currentFoodId);
                 if (index !== -1) {
-                    projects[index].storeName = newName;
+                    foods[index].storeName = newName;
                 }
-                renderProjects();
+                saveFoods();
+                renderFoods();
                 closeModal();
             } else {
                 alert('请输入有效的名称');
             }
         });
         
-        // 排序项目
-        document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('sort-btn')) {
-                const sortBy = e.target.dataset.sortBy;
-                projects.sort((a, b) => {
-                    if (sortBy === 'storeName') {
-                        return a.storeName.localeCompare(b.storeName);
-                    } else if (sortBy === 'rating') {
-                        return a.rating - b.rating;
-                    } else if (sortBy === 'punchDate') {
-                        return new Date(a.punchDate) - new Date(b.punchDate);
-                    }
-                    return 0;
-                });
-                renderProjects();
-            }
-        });
-        
         // 初始化
-        initProjects();
+        initFoods();
     </script>
 </body>
 </html>
