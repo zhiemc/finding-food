@@ -71,6 +71,15 @@
             background-color: #ff1a1a;
         }
         
+        .btn-success {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #3e8e41;
+        }
+        
         .form-group {
             margin-bottom: 15px;
         }
@@ -225,7 +234,10 @@
     <div class="container">
         <h1>美食库存</h1>
         
-        <button id="addFood" class="btn">添加美食</button>
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button id="addFood" class="btn">添加美食</button>
+            <button id="refreshData" class="btn btn-success">刷新数据</button>
+        </div>
         
         <table id="foodsTable">
             <thead>
@@ -285,29 +297,57 @@
         let foods = [];
         let currentFoodId = null;
         let isEditMode = false;
+        let githubToken = '你的GitHub访问令牌';
+        let repoOwner = '仓库所有者';
+        let repoName = 'food-inventory';
+        let filePath = 'inventory.csv';
         
         // 初始化美食列表
         function initFoods() {
-            // 从localStorage加载数据
-            const savedFoods = localStorage.getItem('foods');
-            if (savedFoods) {
-                foods = JSON.parse(savedFoods);
-            } else {
-                // 示例数据
-                foods = [
-                    { id: 1, storeName: "星巴克", rating: 5, addDate: "2024-01-01" },
-                    { id: 2, storeName: "麦当劳", rating: 4, addDate: "2024-01-02" },
-                    { id: 3, storeName: "肯德基", rating: 3, addDate: "2024-01-03" }
-                ];
-                saveFoods();
+            fetchFoods();
+        }
+        
+        // 从GitHub获取美食数据
+        function fetchFoods() {
+            const url = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`;
+            
+            fetch(url, {
+                headers: {
+                    'Authorization': `token ${githubToken}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.content) {
+                    const csvContent = atob(data.content);
+                    parseCSV(csvContent);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching foods:', error);
+            });
+        }
+        
+        // 解析CSV内容
+        function parseCSV(csvContent) {
+            const lines = csvContent.split('\n');
+            const headers = lines[0].split(',');
+            
+            foods = [];
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].trim() === '') continue;
+                
+                const values = lines[i].split(',');
+                const food = {
+                    storeName: values[0],
+                    rating: values[1] ? parseInt(values[1]) : null,
+                    addDate: values[2]
+                };
+                
+                foods.push(food);
             }
             
             renderFoods();
-        }
-        
-        // 保存美食到localStorage
-        function saveFoods() {
-            localStorage.setItem('foods', JSON.stringify(foods));
         }
         
         // 渲染美食列表
@@ -323,9 +363,9 @@
                     <td>${food.rating || '-'}</td>
                     <td>${food.addDate}</td>
                     <td class="action-buttons">
-                        <button class="action-btn edit-btn" onclick="editFood(${food.id})">编辑</button>
-                        <button class="action-btn delete-btn" onclick="deleteFood(${food.id})">删除</button>
-                        <button class="action-btn rename-btn" onclick="renameFood(${food.id})">重命名</button>
+                        <button class="action-btn edit-btn" onclick="editFood(${foods.indexOf(food)})">编辑</button>
+                        <button class="action-btn delete-btn" onclick="deleteFood(${foods.indexOf(food)})">删除</button>
+                        <button class="action-btn rename-btn" onclick="renameFood(${foods.indexOf(food)})">重命名</button>
                     </td>
                 `;
                 
@@ -333,14 +373,71 @@
             });
         }
         
+        // 保存美食到GitHub
+        function saveFoodsToGitHub() {
+            let csvContent = "店名,评分,添加日期\n";
+            
+            foods.forEach(food => {
+                csvContent += `${food.storeName},${food.rating || ''},${food.addDate}\n`;
+            });
+            
+            const url = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`;
+            
+            getSHA().then(sha => {
+                if (sha) {
+                    fetch(url, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `token ${githubToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: 'Update inventory.csv',
+                            content: btoa(csvContent),
+                            sha: sha
+                        })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to update file');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('File updated successfully:', data);
+                    })
+                    .catch(error => {
+                        console.error('Error saving foods:', error);
+                    });
+                }
+            });
+        }
+        
+        // 获取文件的SHA值
+        function getSHA() {
+            const url = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`;
+            
+            return fetch(url, {
+                headers: {
+                    'Authorization': `token ${githubToken}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => data.sha)
+            .catch(error => {
+                console.error('Error getting SHA:', error);
+                return null;
+            });
+        }
+        
         // 打开模态框
-        function openModal(title, isEdit = false, foodId = null) {
+        function openModal(title, isEdit = false, foodIndex = null) {
             document.getElementById('modalTitle').textContent = title;
             isEditMode = isEdit;
-            currentFoodId = foodId;
+            currentFoodId = foodIndex;
             
             if (isEdit) {
-                const food = foods.find(f => f.id === foodId);
+                const food = foods[foodIndex];
                 document.getElementById('storeName').value = food.storeName;
                 document.getElementById('rating').value = food.rating || '';
             } else {
@@ -368,6 +465,11 @@
             openModal('添加美食');
         });
         
+        // 刷新数据
+        document.getElementById('refreshData').addEventListener('click', function() {
+            fetchFoods();
+        });
+        
         // 保存美食
         document.getElementById('saveFood').addEventListener('click', function() {
             const storeName = document.getElementById('storeName').value;
@@ -379,43 +481,40 @@
                 
                 if (isEditMode) {
                     // 编辑现有美食
-                    const index = foods.findIndex(f => f.id === currentFoodId);
-                    if (index !== -1) {
-                        foods[index].storeName = storeName;
-                        if (rating) {
-                            foods[index].rating = parseInt(rating);
-                        }
+                    foods[currentFoodId].storeName = storeName;
+                    if (rating) {
+                        foods[currentFoodId].rating = parseInt(rating);
                     }
                 } else {
                     // 添加新美食
-                    const newId = foods.length > 0 ? Math.max(...foods.map(f => f.id)) + 1 : 1;
-                    foods.push({ id: newId, storeName, rating: rating ? parseInt(rating) : null, addDate });
+                    foods.push({ storeName, rating: rating ? parseInt(rating) : null, addDate });
                 }
                 
-                saveFoods();
                 renderFoods();
                 closeModal();
+                saveFoodsToGitHub();
             } else {
                 alert('请输入店名');
             }
         });
         
         // 编辑美食
-        function editFood(id) {
-            openModal('编辑美食', true, id);
+        function editFood(index) {
+            openModal('编辑美食', true, index);
         }
         
         // 删除美食
-        function deleteFood(id) {
-            foods = foods.filter(food => food.id !== id);
-            saveFoods();
+        function deleteFood(index) {
+            foods.splice(index, 1);
             renderFoods();
+            closeModal();
+            saveFoodsToGitHub();
         }
         
         // 重命名美食
-        function renameFood(id) {
-            currentFoodId = id;
-            const food = foods.find(f => f.id === id);
+        function renameFood(index) {
+            currentFoodId = index;
+            const food = foods[index];
             document.getElementById('newName').value = food.storeName;
             document.getElementById('renameModal').style.display = 'flex';
             setTimeout(() => {
@@ -427,13 +526,10 @@
         document.getElementById('saveRename').addEventListener('click', function() {
             const newName = document.getElementById('newName').value;
             if (newName) {
-                const index = foods.findIndex(f => f.id === currentFoodId);
-                if (index !== -1) {
-                    foods[index].storeName = newName;
-                }
-                saveFoods();
+                foods[currentFoodId].storeName = newName;
                 renderFoods();
                 closeModal();
+                saveFoodsToGitHub();
             } else {
                 alert('请输入有效的名称');
             }
