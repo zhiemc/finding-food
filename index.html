@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的地图</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/antd@5.8.2/dist/antd.min.css" />
+    <title>代打卡项目管理</title>
     <style>
         * {
             margin: 0;
@@ -16,45 +15,23 @@
         body {
             background-color: #f5f5f7;
             color: #1d1d1f;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
+            padding: 20px;
         }
         
-        .header {
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
             background-color: white;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            text-align: center;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+            padding: 30px;
         }
         
         h1 {
             font-size: 24px;
             font-weight: 600;
+            margin-bottom: 20px;
             color: #000;
-        }
-        
-        .container {
-            display: flex;
-            flex: 1;
-        }
-        
-        .sidebar {
-            width: 300px;
-            background-color: white;
-            padding: 20px;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
-            overflow-y: auto;
-        }
-        
-        .map-container {
-            flex: 1;
-            overflow: hidden;
-        }
-        
-        #map {
-            height: 100%;
-            width: 100%;
         }
         
         .btn {
@@ -68,53 +45,27 @@
             cursor: pointer;
             transition: all 0.3s ease;
             margin: 5px 0;
-            width: 100%;
         }
         
         .btn:hover {
             background-color: #0077f0;
         }
         
-        .marker-list {
-            margin-top: 20px;
+        .btn-secondary {
+            background-color: #f5f5f7;
+            color: #000;
         }
         
-        .marker-item {
-            background-color: #f9f9f9;
-            border-radius: 5px;
-            padding: 10px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .btn-secondary:hover {
+            background-color: #e6e6e9;
         }
         
-        .marker-info {
-            flex: 1;
-        }
-        
-        .marker-name {
-            font-weight: 500;
-            margin-bottom: 5px;
-        }
-        
-        .marker-coordinates {
-            font-size: 12px;
-            color: #86868b;
-        }
-        
-        .delete-btn {
+        .btn-danger {
             background-color: #ff3b30;
             color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 3px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
         }
         
-        .delete-btn:hover {
+        .btn-danger:hover {
             background-color: #ff1a1a;
         }
         
@@ -136,165 +87,327 @@
             font-size: 14px;
         }
         
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e6e6e9;
+        }
+        
+        th {
+            background-color: #f9f9f9;
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .action-btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .edit-btn {
+            background-color: #0071e3;
+            color: white;
+        }
+        
+        .delete-btn {
+            background-color: #ff3b30;
+            color: white;
+        }
+        
+        .rename-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+        
+        .sort-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #86868b;
+        }
+        
         @media (max-width: 768px) {
             .container {
-                flex-direction: column;
+                padding: 20px;
             }
             
-            .sidebar {
-                width: 100%;
+            th, td {
+                padding: 10px;
+                font-size: 12px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>我的地图</h1>
+    <div class="container">
+        <h1>代打卡项目管理</h1>
+        
+        <button id="addProject" class="btn">添加项目</button>
+        
+        <table id="projectsTable">
+            <thead>
+                <tr>
+                    <th>店名</th>
+                    <th>五分评分</th>
+                    <th>打卡日</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="projectsList">
+                <!-- 项目列表将在这里动态生成 -->
+            </tbody>
+        </table>
     </div>
     
-    <div class="container">
-        <div class="sidebar">
-            <h2>管理点位</h2>
-            
-            <div class="form-group">
-                <label for="markerName">点位名称</label>
-                <input type="text" id="markerName" placeholder="输入点位名称">
+    <!-- 添加/编辑项目模态框 -->
+    <div id="projectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">添加项目</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
             </div>
             
             <div class="form-group">
-                <label for="markerLat">纬度</label>
-                <input type="number" id="markerLat" step="0.000001" placeholder="输入纬度">
+                <label for="storeName">店名</label>
+                <input type="text" id="storeName" placeholder="输入店名">
             </div>
             
             <div class="form-group">
-                <label for="markerLng">经度</label>
-                <input type="number" id="markerLng" step="0.000001" placeholder="输入经度">
+                <label for="rating">五分评分</label>
+                <input type="number" id="rating" min="1" max="5" placeholder="输入评分（1-5）">
             </div>
             
-            <button id="addMarker" class="btn">添加点位</button>
-            
-            <h2>现有点位</h2>
-            <div class="marker-list" id="markerList">
-                <!-- 点位列表将在这里动态生成 -->
+            <div class="form-group">
+                <label for="punchDate">打卡日</label>
+                <input type="date" id="punchDate">
             </div>
+            
+            <button id="saveProject" class="btn">保存</button>
         </div>
-        
-        <div class="map-container">
-            <div id="map"></div>
+    </div>
+    
+    <!-- 重命名项目模态框 -->
+    <div id="renameModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>重命名项目</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            
+            <div class="form-group">
+                <label for="newName">新名称</label>
+                <input type="text" id="newName" placeholder="输入新名称">
+            </div>
+            
+            <button id="saveRename" class="btn">保存</button>
         </div>
     </div>
 
-    <script src="https://webapi.amap.com/maps?v=2.0&key=01d894d8da93f4fbb0287613001e1433"></script>
     <script>
-        // 初始化地图
-        let map;
-        let markers = [];
+        let projects = [];
+        let currentProjectId = null;
+        let isEditMode = false;
         
-        function initMap() {
-            // 初始化地图
-            map = new AMap.Map('map', {
-                zoom: 13,
-                center: [116.4074, 39.9042], // 默认显示北京
-                viewMode: '3D'
-            });
+        // 初始化项目列表
+        function initProjects() {
+            // 示例数据
+            projects = [
+                { id: 1, storeName: "星巴克", rating: 5, punchDate: "2024-01-01" },
+                { id: 2, storeName: "麦当劳", rating: 4, punchDate: "2024-01-02" },
+                { id: 3, storeName: "肯德基", rating: 3, punchDate: "2024-01-03" }
+            ];
             
-            // 初始化时添加一些示例标记
-            addMarker('示例点位1', 39.9042, 116.4074);
-            addMarker('示例点位2', 39.9142, 116.4174);
+            renderProjects();
         }
         
-        // 添加标记点
-        function addMarker(name, lat, lng) {
-            // 创建标记
-            const marker = new AMap.Marker({
-                position: [lng, lat],
-                title: name
-            });
+        // 渲染项目列表
+        function renderProjects() {
+            const projectsList = document.getElementById('projectsList');
+            projectsList.innerHTML = '';
             
-            // 将标记添加到地图
-            map.add(marker);
-            
-            // 存储标记数据
-            markers.push({
-                id: Date.now(),
-                name: name,
-                lat: lat,
-                lng: lng,
-                marker: marker
-            });
-            
-            // 更新列表
-            updateMarkerList();
-            
-            // 聚焦到新标记
-            map.setZoomAndCenter(16, [lng, lat]);
-        }
-        
-        // 删除标记点
-        function deleteMarker(id) {
-            // 查找标记
-            const index = markers.findIndex(marker => marker.id === id);
-            if (index !== -1) {
-                // 从地图上移除
-                map.remove(markers[index].marker);
+            projects.forEach(project => {
+                const row = document.createElement('tr');
                 
-                // 从数组中移除
-                markers.splice(index, 1);
-                
-                // 更新列表
-                updateMarkerList();
-            }
-        }
-        
-        // 更新标记列表
-        function updateMarkerList() {
-            const markerListElement = document.getElementById('markerList');
-            markerListElement.innerHTML = '';
-            
-            markers.forEach(marker => {
-                const markerItem = document.createElement('div');
-                markerItem.className = 'marker-item';
-                
-                markerItem.innerHTML = `
-                    <div class="marker-info">
-                        <div class="marker-name">${marker.name}</div>
-                        <div class="marker-coordinates">纬度: ${marker.lat}, 经度: ${marker.lng}</div>
-                    </div>
-                    <button class="delete-btn" onclick="deleteMarker(${marker.id})">删除</button>
+                row.innerHTML = `
+                    <td>${project.storeName}</td>
+                    <td>${project.rating}</td>
+                    <td>${project.punchDate}</td>
+                    <td class="action-buttons">
+                        <button class="action-btn edit-btn" onclick="editProject(${project.id})">编辑</button>
+                        <button class="action-btn delete-btn" onclick="deleteProject(${project.id})">删除</button>
+                        <button class="action-btn rename-btn" onclick="renameProject(${project.id})">重命名</button>
+                    </td>
                 `;
                 
-                markerListElement.appendChild(markerItem);
+                projectsList.appendChild(row);
             });
         }
         
-        // 添加标记按钮点击事件
-        document.getElementById('addMarker').addEventListener('click', function() {
-            const name = document.getElementById('markerName').value;
-            const lat = parseFloat(document.getElementById('markerLat').value);
-            const lng = parseFloat(document.getElementById('markerLng').value);
+        // 打开模态框
+        function openModal(title, isEdit = false, projectId = null) {
+            document.getElementById('modalTitle').textContent = title;
+            isEditMode = isEdit;
+            currentProjectId = projectId;
             
-            if (name && !isNaN(lat) && !isNaN(lng)) {
-                addMarker(name, lat, lng);
-                
-                // 清空输入框
-                document.getElementById('markerName').value = '';
-                document.getElementById('markerLat').value = '';
-                document.getElementById('markerLng').value = '';
+            if (isEdit) {
+                const project = projects.find(p => p.id === projectId);
+                document.getElementById('storeName').value = project.storeName;
+                document.getElementById('rating').value = project.rating;
+                document.getElementById('punchDate').value = project.punchDate;
             } else {
-                alert('请输入有效的名称、纬度和经度');
+                document.getElementById('storeName').value = '';
+                document.getElementById('rating').value = '';
+                document.getElementById('punchDate').value = '';
+            }
+            
+            document.getElementById('projectModal').style.display = 'flex';
+        }
+        
+        // 关闭模态框
+        function closeModal() {
+            document.getElementById('projectModal').style.display = 'none';
+            document.getElementById('renameModal').style.display = 'none';
+        }
+        
+        // 添加项目
+        document.getElementById('addProject').addEventListener('click', function() {
+            openModal('添加项目');
+        });
+        
+        // 保存项目
+        document.getElementById('saveProject').addEventListener('click', function() {
+            const storeName = document.getElementById('storeName').value;
+            const rating = parseInt(document.getElementById('rating').value);
+            const punchDate = document.getElementById('punchDate').value;
+            
+            if (storeName && !isNaN(rating) && punchDate) {
+                if (isEditMode) {
+                    // 编辑现有项目
+                    const index = projects.findIndex(p => p.id === currentProjectId);
+                    if (index !== -1) {
+                        projects[index].storeName = storeName;
+                        projects[index].rating = rating;
+                        projects[index].punchDate = punchDate;
+                    }
+                } else {
+                    // 添加新项目
+                    const newId = projects.length > 0 ? Math.max(...projects.map(p => p.id)) + 1 : 1;
+                    projects.push({ id: newId, storeName, rating, punchDate });
+                }
+                
+                renderProjects();
+                closeModal();
+            } else {
+                alert('请输入有效的信息');
             }
         });
         
-        // 允许在地图上点击添加标记
-        map.on('click', function(e) {
-            const name = prompt('请输入点位名称:');
-            if (name) {
-                addMarker(name, e.latLng.lat, e.latLng.lng);
+        // 编辑项目
+        function editProject(id) {
+            openModal('编辑项目', true, id);
+        }
+        
+        // 删除项目
+        function deleteProject(id) {
+            projects = projects.filter(project => project.id !== id);
+            renderProjects();
+        }
+        
+        // 重命名项目
+        function renameProject(id) {
+            currentProjectId = id;
+            const project = projects.find(p => p.id === id);
+            document.getElementById('newName').value = project.storeName;
+            document.getElementById('renameModal').style.display = 'flex';
+        }
+        
+        // 保存重命名
+        document.getElementById('saveRename').addEventListener('click', function() {
+            const newName = document.getElementById('newName').value;
+            if (newName) {
+                const index = projects.findIndex(p => p.id === currentProjectId);
+                if (index !== -1) {
+                    projects[index].storeName = newName;
+                }
+                renderProjects();
+                closeModal();
+            } else {
+                alert('请输入有效的名称');
             }
         });
         
-        // 初始化地图
-        initMap();
+        // 排序项目
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('sort-btn')) {
+                const sortBy = e.target.dataset.sortBy;
+                projects.sort((a, b) => {
+                    if (sortBy === 'storeName') {
+                        return a.storeName.localeCompare(b.storeName);
+                    } else if (sortBy === 'rating') {
+                        return a.rating - b.rating;
+                    } else if (sortBy === 'punchDate') {
+                        return new Date(a.punchDate) - new Date(b.punchDate);
+                    }
+                    return 0;
+                });
+                renderProjects();
+            }
+        });
+        
+        // 初始化
+        initProjects();
     </script>
 </body>
 </html>
